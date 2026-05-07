@@ -84,7 +84,26 @@ window.App = (function () {
       .replace(/'/g, '&#39;');
   }
 
+  // モバイルでピンチズームされた状態を解除する（state遷移ごとに呼ぶ）
+  // visualViewport.scale > 1.01 のときだけ実行 → 通常時は no-op でフリッカー回避
+  function resetZoom() {
+    try {
+      if (window.visualViewport && window.visualViewport.scale &&
+          window.visualViewport.scale <= 1.01) return;
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (!viewport) return;
+      const original = viewport.getAttribute('content');
+      if (!original) return;
+      viewport.setAttribute('content',
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+      setTimeout(() => {
+        viewport.setAttribute('content', original);
+      }, 100);
+    } catch (_) { /* noop */ }
+  }
+
   function render() {
+    resetZoom();
     const ctx = parseLocation();
     const el = getAppEl();
     if (!el) return;

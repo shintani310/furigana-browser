@@ -7,8 +7,10 @@ window.Storage = (function () {
   const KEY_MODE = 'frb.mode';
   const KEY_HISTORY = 'frb.history';
   const KEY_FAVORITES = 'frb.favorites';
+  const KEY_SEARCH_HISTORY = 'frb.searchHistory';
   const HISTORY_MAX = 30;
   const FAVORITES_MAX = 50;
+  const SEARCH_HISTORY_MAX = 30;
   const DEFAULT_GRADE = 3;
   const DEFAULT_MODE = 'extract'; // 'extract' | 'fullcopy'
   const VALID_MODES = ['extract', 'fullcopy'];
@@ -121,6 +123,27 @@ window.Storage = (function () {
     }
   }
 
+  // ---- 検索履歴 ----
+  function getSearchHistory() {
+    const list = readJson(KEY_SEARCH_HISTORY, []);
+    return Array.isArray(list) ? list : [];
+  }
+  function addSearchHistory(q) {
+    if (!q || typeof q !== 'string') return;
+    const trimmed = q.trim();
+    if (!trimmed) return;
+    const list = getSearchHistory().filter((x) => x !== trimmed);
+    list.unshift(trimmed);
+    writeJson(KEY_SEARCH_HISTORY, list.slice(0, SEARCH_HISTORY_MAX));
+  }
+  function removeSearchHistory(q) {
+    if (!q) return;
+    writeJson(KEY_SEARCH_HISTORY, getSearchHistory().filter((x) => x !== q));
+  }
+  function clearSearchHistory() {
+    writeJson(KEY_SEARCH_HISTORY, []);
+  }
+
   return {
     getGrade,
     setGrade,
@@ -135,6 +158,10 @@ window.Storage = (function () {
     addFavorite,
     removeFavorite,
     toggleFavorite,
+    getSearchHistory,
+    addSearchHistory,
+    removeSearchHistory,
+    clearSearchHistory,
     normalizeUrl,
   };
 })();

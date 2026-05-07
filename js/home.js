@@ -36,6 +36,60 @@ window.HomeView = (function () {
       if (!q) return;
       window.App.navigate({ q });
     });
+
+    // 検索履歴サジェスト
+    const input = form.querySelector('.search-input');
+    const sugList = form.querySelector('[data-search-suggestions]');
+    if (!input || !sugList) return;
+
+    function renderSuggestions(filter) {
+      const all = window.Storage.getSearchHistory ? window.Storage.getSearchHistory() : [];
+      const f = (filter || '').toLowerCase();
+      const matches = f
+        ? all.filter((q) => q.toLowerCase().includes(f))
+        : all;
+      if (matches.length === 0) {
+        sugList.hidden = true;
+        sugList.innerHTML = '';
+        return;
+      }
+      sugList.innerHTML = matches.slice(0, 10).map((q) =>
+        '<li class="search-sug">' +
+          '<button type="button" class="search-sug-pick" data-q="' + esc(q) + '">' + esc(q) + '</button>' +
+          '<button type="button" class="search-sug-del" data-q="' + esc(q) + '" aria-label="けす">×</button>' +
+        '</li>'
+      ).join('');
+      sugList.hidden = false;
+    }
+
+    input.addEventListener('focus', () => renderSuggestions(input.value));
+    input.addEventListener('input', () => renderSuggestions(input.value));
+    input.addEventListener('blur', () => {
+      // クリック完了を待ってから隠す
+      setTimeout(() => { sugList.hidden = true; }, 150);
+    });
+
+    // mousedownでpreventDefaultしておくとblurが発火せず候補クリックが安定する
+    sugList.addEventListener('mousedown', (e) => { e.preventDefault(); });
+    sugList.addEventListener('click', (e) => {
+      const pick = e.target.closest('.search-sug-pick');
+      if (pick) {
+        e.preventDefault();
+        const q = pick.getAttribute('data-q');
+        if (q) window.App.navigate({ q });
+        return;
+      }
+      const del = e.target.closest('.search-sug-del');
+      if (del) {
+        e.preventDefault();
+        e.stopPropagation();
+        const q = del.getAttribute('data-q');
+        if (q) window.Storage.removeSearchHistory(q);
+        renderSuggestions(input.value);
+        input.focus();
+        return;
+      }
+    });
   }
 
   function bindEntryClicks(container) {
@@ -77,9 +131,12 @@ window.HomeView = (function () {
       '<section class="home">' +
         '<h1 class="home-title">ふりがなブラウザ</h1>' +
         '<form class="search-form" data-search-form>' +
-          '<input type="search" name="q" class="search-input" ' +
-            'placeholder="しらべたいことばをいれてね" ' +
-            'autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required />' +
+          '<div class="search-input-wrap">' +
+            '<input type="search" name="q" class="search-input" ' +
+              'placeholder="しらべたいことばをいれてね" ' +
+              'autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required />' +
+            '<ul class="search-suggestions" data-search-suggestions hidden></ul>' +
+          '</div>' +
           '<button type="submit" class="search-submit">けんさく</button>' +
         '</form>' +
         '<section class="home-section">' +

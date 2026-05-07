@@ -108,6 +108,11 @@ window.SearchView = (function () {
   }
 
   async function render(container, ctx) {
+    // 検索履歴に記録（HOMEのサジェストで再利用）
+    if (ctx.query && window.Storage && typeof window.Storage.addSearchHistory === 'function') {
+      window.Storage.addSearchHistory(ctx.query);
+    }
+
     container.innerHTML =
       '<section class="search">' +
         '<h2 class="search-heading">「' + esc(ctx.query) + '」のけんさくけっか</h2>' +
